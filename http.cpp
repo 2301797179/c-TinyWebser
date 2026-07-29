@@ -14,8 +14,22 @@ struct http_mapp
 };
 
 http_mapp read_http(std::string http_case) {
-    
+
     http_mapp hp ;
+    for (char http_char : http_case):
+        switch (condition)
+        {
+        case "POST":
+
+            /* code */
+            break;
+        case
+
+        default:
+            break;
+        }
+
+
     return hp;
 };
 
