@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>AI 视觉推理网关控制台</title>
+    <style>
+        body { background-color: #f4f7f6; font-family: 'Segoe UI', -apple-system, sans-serif; text-align: center; padding-top: 50px; margin: 0; }
+        .card { background: white; padding: 40px; border-radius: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.06); display: inline-block; width: 450px; }
+        h1 { color: #2c3e50; margin-bottom: 20px; font-size: 26px; }
+        
+        /* 拖拽/点击上传区域样式 */
+        .upload-box { border: 2px dashed #3498db; border-radius: 12px; padding: 30px; background-color: #f8fafc; cursor: pointer; transition: 0.3s; margin-bottom: 20px; position: relative; }
+        .upload-box:hover { background-color: #f0f7ff; border-color: #2980b9; }
+        .upload-text { color: #7f8c8d; font-size: 14px; }
+        #file-input { display: none; } /* 隐藏原生丑陋的上传按钮 */
+        
+        /* 图片预览区样式 */
+        #preview-img { max-width: 100%; max-height: 250px; border-radius: 8px; display: none; margin: 15px auto; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+        
+        /* 发送按钮样式 */
+        .btn { background-color: #2ecc71; color: white; border: none; padding: 12px 30px; font-size: 16px; border-radius: 8px; cursor: pointer; transition: 0.2s; font-weight: bold; width: 100%; display: none; }
+        .btn:hover { background-color: #27ae60; transform: translateY(-1px); }
+        
+        /* 状态显示 */
+        #status-text { margin-top: 15px; font-size: 14px; color: #95a5a6; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+    <div class="card">
+        <h1>🤖 AI 视觉推理网关</h1>
+        
+        <!-- 1. 点击上传区域 -->
+        <div class="upload-box" onclick="document.getElementById('file-input').click()">
+            <div class="upload-text">📁 点击选择或拖盘本地图像</div>
+            <!-- 2. 图片放到 HTML 中进行预览的载体 -->
+            <img id="preview-img" src="" alt="图片预览">
+            <input type="file" id="file-input" accept="image/*">
+        </div>
+
+        <!-- 3. 点击发送按钮 -->
+        <button id="send-btn" class="btn" onclick="uploadImageToServer()">🚀 启动 AI 视觉推理</button>
+        <div id="status-text"></div>
+    </div>
+
+    <script>
+        let base64ImageData = ""; // 用来存放转换后的图片文本
+
+        // 监听文件选择框的变动
+        document.getElementById('file-input').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            document.getElementById('status-text').innerText = "正在读取图片...";
+
+            // 使用浏览器自带的 FileReader 读取图片文件
+            const reader = new FileReader();
+            
+            // 当图片读取成功后的回调函数
+            reader.onload = function(event) {
+                // A. 将图片放回 HTML 的 img 标签中，实现本地无损预览
+                const previewImg = document.getElementById('preview-img');
+                previewImg.src = event.target.result;
+                previewImg.style.display = "block"; // 让预览图显示出来
+                
+                // 隐藏上传提示文字，让界面更整洁
+                document.querySelector('.upload-text').style.display = "none";
+                // 让发送按钮亮出来
+                document.getElementById('send-btn').style.display = "block";
+                document.getElementById('status-text').innerText = "图片已装载完毕";
+
+                // B. 将完整的 Base64 图片数据剥离存入变量（准备发给 C++ 后台）
+                base64ImageData = event.target.result;
+            };
+
+            // 以 DataURL (Base64) 形式读取图片
+            reader.readAsDataURL(file);
+        });
+
+        // 点击按钮，将图片真正通过网络 POST 发送给 C++ 服务器
+        function uploadImageToServer() {
+            if (!base64ImageData) {
+                alert("请先选择一张图片！");
+                return;
+            }
+
+            document.getElementById('status-text').style.color = "#3498db";
+            document.getElementById('status-text').innerText = "📡 正在通过 32 核网关高速上传图片数据...";
+
+            // 拼装成一年前你高瞻远瞩建好的 JSON 结构体 Body 格式
+            const requestBody = {
+                image_name: "upload_image.jpg",
+                image_data: base64ImageData // 里面包含了长得像天书一样的图片文本
+            };
+
+            // 发起标准的 HTTP POST 请求，精准命中您的 C++ 推理路由！
+            fetch('/api/v1/face', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(requestBody) // 序列化成纯文本发过去
+            })
+            .then(response => {
+                if (response.ok) return response.json();
+                throw new Error('网关响应异常');
+            })
+            .then(data => {
+                document.getElementById('status-text').style.color = "#2ecc71";
+                // 收到您在 C++ 里返回的 {"status":"success", "result":"Face Detected!"}
+                document.getElementById('status-text').innerText = `✅ 推理大成功! 结果: ${data.result}`;
+            })
+            .catch(error => {
+                document.getElementById('status-text').style.color = "#e74c3c";
+                document.getElementById('status-text').innerText = `❌ 发送失败: ${error.message}`;
+            });
+        }
+    </script>
+</body>
+</html>

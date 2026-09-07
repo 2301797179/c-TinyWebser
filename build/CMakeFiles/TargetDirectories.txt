@@ -1,0 +1,3 @@
+/home/gh230179/project/c-TinyWebser/build/CMakeFiles/http_server.dir
+/home/gh230179/project/c-TinyWebser/build/CMakeFiles/edit_cache.dir
+/home/gh230179/project/c-TinyWebser/build/CMakeFiles/rebuild_cache.dir
